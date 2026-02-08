@@ -4,12 +4,12 @@ const path = require('path');
 require('dotenv').config();
 
 // Import database connection
-const connectDB = require('./config/database');
+const connectDB = require('../config/database');
 
 // Import routes
-const projectRoutes = require('./routes/projects');
-const contactRoutes = require('./routes/contacts');
-const adminRoutes = require('./routes/admin');
+const projectRoutes = require('../routes/projects');
+const contactRoutes = require('../routes/contacts');
+const adminRoutes = require('../routes/admin');
 
 // Connect to database
 connectDB();
@@ -60,8 +60,8 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-const PORT = process.env.PORT || 5000;
+// const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// app.listen(PORT, () => {
+//   console.log(`Server running on port ${PORT}`);
+// });
