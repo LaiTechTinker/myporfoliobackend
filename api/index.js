@@ -1,4 +1,5 @@
 const express = require('express');
+const serverless = require("serverless-http");
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
@@ -78,7 +79,7 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
-module.exports = app;
+module.exports = serverless(app);
 
 // const PORT = process.env.PORT || 5000;
 
