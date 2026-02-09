@@ -12,7 +12,7 @@ const contactRoutes = require('../routes/contacts');
 const adminRoutes = require('../routes/admin');
 
 // Connect to database
-connectDB();
+// connectDB();
 
 const app = express();
 
@@ -20,6 +20,19 @@ const app = express();
 app.use(cors({
   origin:"*"
 }));
+let isConnected = false;
+
+const connectDatabase = async () => {
+  if (!isConnected) {
+    await connectDB();
+    isConnected = true;
+  }
+};
+
+app.use(async (req, res, next) => {
+  await connectDatabase();
+  next();
+});
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -61,6 +74,7 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
+module.exports = app;
 
 // const PORT = process.env.PORT || 5000;
 
