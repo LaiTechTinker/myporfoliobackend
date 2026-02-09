@@ -1,14 +1,15 @@
-const express = require('express');
-const router = express.Router();
-const {
+import express from 'express';
+import {
   getProjects,
   getProject,
   createProject,
   updateProject,
   deleteProject
-} = require('../controllers/projectController');
-const { verifyToken } = require('../controllers/adminController');
-const upload = require('../middleware/upload');
+} from '../controllers/projectController.js';
+import { verifyToken } from '../controllers/adminController.js';
+import upload from '../middleware/upload.js';
+
+const router = express.Router();
 
 // Public routes
 router.get('/', getProjects);
@@ -27,4 +28,4 @@ router.put('/:id', verifyToken, upload.fields([
 
 router.delete('/:id', verifyToken, deleteProject);
 
-module.exports = router;
+export default router;

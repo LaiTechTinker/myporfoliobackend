@@ -1,5 +1,5 @@
-const Admin = require('../models/Admin');
-const jwt = require('jsonwebtoken');
+import Admin from '../models/Admin.js';
+import jwt from 'jsonwebtoken';
 
 // Generate JWT token
 const generateToken = (id) => {
@@ -9,7 +9,7 @@ const generateToken = (id) => {
 };
 
 // Admin login
-exports.login = async (req, res) => {
+export const login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -42,7 +42,7 @@ exports.login = async (req, res) => {
 };
 
 // Create initial admin (one-time setup)
-exports.createAdmin = async (req, res) => {
+export const createAdmin = async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -67,7 +67,7 @@ exports.createAdmin = async (req, res) => {
 };
 
 // Verify token middleware (for protected routes)
-exports.verifyToken = async (req, res, next) => {
+export const verifyToken = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
 

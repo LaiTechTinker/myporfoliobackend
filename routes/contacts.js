@@ -1,11 +1,12 @@
-const express = require('express');
-const router = express.Router();
-const {
+import express from 'express';
+import {
   getContacts,
   createContact,
   deleteContact
-} = require('../controllers/contactController');
-const { verifyToken } = require('../controllers/adminController');
+} from '../controllers/contactController.js';
+import { verifyToken } from '../controllers/adminController.js';
+
+const router = express.Router();
 
 // Public route
 router.post('/', createContact);
@@ -14,4 +15,4 @@ router.post('/', createContact);
 router.get('/', verifyToken, getContacts);
 router.delete('/:id', verifyToken, deleteContact);
 
-module.exports = router;
+export default router;

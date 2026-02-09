@@ -1,7 +1,7 @@
-const Contact = require('../models/Contact');
+import Contact from '../models/Contact.js';
 
 // Get all contacts (admin only)
-exports.getContacts = async (req, res) => {
+export const getContacts = async (req, res) => {
   try {
     const contacts = await Contact.find().sort({ createdAt: -1 });
     res.json(contacts);
@@ -10,8 +10,8 @@ exports.getContacts = async (req, res) => {
   }
 };
 
-// Create contact message
-exports.createContact = async (req, res) => {
+// Create contact
+export const createContact = async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
@@ -22,23 +22,20 @@ exports.createContact = async (req, res) => {
     });
 
     const savedContact = await contact.save();
-    res.status(201).json({
-      message: 'Message sent successfully',
-      contact: savedContact
-    });
+    res.status(201).json(savedContact);
   } catch (error) {
     res.status(400).json({ message: 'Validation error', error: error.message });
   }
 };
 
-// Delete contact message (admin only)
-exports.deleteContact = async (req, res) => {
+// Delete contact (admin only)
+export const deleteContact = async (req, res) => {
   try {
     const contact = await Contact.findByIdAndDelete(req.params.id);
     if (!contact) {
-      return res.status(404).json({ message: 'Contact message not found' });
+      return res.status(404).json({ message: 'Contact not found' });
     }
-    res.json({ message: 'Contact message deleted successfully' });
+    res.json({ message: 'Contact deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

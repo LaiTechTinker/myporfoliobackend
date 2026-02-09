@@ -1,16 +1,14 @@
-const express = require('express');
-const serverless = require("serverless-http");
-const cors = require('cors');
-const path = require('path');
-require('dotenv').config();
+import express from 'express';
+import serverless from 'serverless-http';
+import cors from 'cors';
+import path from 'path';
+import dotenv from 'dotenv';
+import connectDB from '../config/database.js';
+import projectRoutes from '../routes/projects.js';
+import contactRoutes from '../routes/contacts.js';
+import adminRoutes from '../routes/admin.js';
 
-// Import database connection
-const connectDB = require('../config/database');
-
-// Import routes
-const projectRoutes = require('../routes/projects');
-const contactRoutes = require('../routes/contacts');
-const adminRoutes = require('../routes/admin');
+dotenv.config();
 
 // Connect to database
 // connectDB();
@@ -79,7 +77,8 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
-module.exports = serverless(app);
+
+export default serverless(app);
 
 // const PORT = process.env.PORT || 5000;
 

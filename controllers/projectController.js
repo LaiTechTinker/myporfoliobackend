@@ -1,7 +1,7 @@
-const Project = require('../models/Project');
+import Project from '../models/Project.js';
 
 // Get all projects
-exports.getProjects = async (req, res) => {
+export const getProjects = async (req, res) => {
   try {
     const projects = await Project.find().sort({ createdAt: -1 });
     res.json(projects);
@@ -11,7 +11,7 @@ exports.getProjects = async (req, res) => {
 };
 
 // Get single project
-exports.getProject = async (req, res) => {
+export const getProject = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
     if (!project) {
@@ -24,7 +24,7 @@ exports.getProject = async (req, res) => {
 };
 
 // Create project
-exports.createProject = async (req, res) => {
+export const createProject = async (req, res) => {
   try {
     const { title, description, techStack, githubLink, liveDemoLink } = req.body;
 
@@ -50,7 +50,7 @@ exports.createProject = async (req, res) => {
 };
 
 // Update project
-exports.updateProject = async (req, res) => {
+export const updateProject = async (req, res) => {
   try {
     const { title, description, techStack, githubLink, liveDemoLink } = req.body;
 
@@ -88,7 +88,7 @@ exports.updateProject = async (req, res) => {
 };
 
 // Delete project
-exports.deleteProject = async (req, res) => {
+export const deleteProject = async (req, res) => {
   try {
     const project = await Project.findByIdAndDelete(req.params.id);
     if (!project) {
