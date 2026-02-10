@@ -14,6 +14,24 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
+// Connect to database once for serverless
+let isConnected = false;
+const connectDatabase = async () => {
+  if (!isConnected) {
+    try {
+      await connectDB();
+      isConnected = true;
+      console.log('Database connected successfully');
+    } catch (error) {
+      console.error('Database connection failed:', error);
+      throw error;
+    }
+  }
+};
+
+// Initialize database connection
+connectDatabase();
+
 const app = express();
 
 // Middleware
@@ -21,23 +39,8 @@ app.use(cors({
   origin: "*"
 }));
 
-let isConnected = false;
-
-const connectDatabase = async () => {
-  if (!isConnected) {
-    await connectDB();
-    isConnected = true;
-  }
-};
-
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Connect to database on each request (for serverless)
-app.use(async (req, res, next) => {
-  await connectDatabase();
-  next();
-});
 
 app.get("/", (req, res) => {
   res.send("API is working");
