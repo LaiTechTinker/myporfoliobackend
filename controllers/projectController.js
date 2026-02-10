@@ -1,4 +1,5 @@
 import Project from '../models/Project.js';
+import { put } from '@vercel/blob';
 
 // Get all projects
 export const getProjects = async (req, res) => {
@@ -28,9 +29,27 @@ export const createProject = async (req, res) => {
   try {
     const { title, description, techStack, githubLink, liveDemoLink } = req.body;
 
-    // Handle file uploads
-    const image = req.files?.image ? `/uploads/${req.files.image[0].filename}` : null;
-    const video = req.files?.video ? `/uploads/${req.files.video[0].filename}` : null;
+    let imageUrl = null;
+    let videoUrl = null;
+
+    // Handle file uploads to Vercel Blob
+    if (req.files?.image) {
+      const imageFile = req.files.image[0];
+      const blob = await put(`projects/${Date.now()}-${imageFile.originalname}`, imageFile.buffer, {
+        access: 'public',
+        contentType: imageFile.mimetype
+      });
+      imageUrl = blob.url;
+    }
+
+    if (req.files?.video) {
+      const videoFile = req.files.video[0];
+      const blob = await put(`projects/${Date.now()}-${videoFile.originalname}`, videoFile.buffer, {
+        access: 'public',
+        contentType: videoFile.mimetype
+      });
+      videoUrl = blob.url;
+    }
 
     const project = new Project({
       title,
@@ -38,8 +57,8 @@ export const createProject = async (req, res) => {
       techStack: techStack ? techStack.split(',').map(tech => tech.trim()) : [],
       githubLink,
       liveDemoLink,
-      image,
-      video
+      image: imageUrl,
+      video: videoUrl
     });
 
     const savedProject = await project.save();

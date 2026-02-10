@@ -32,12 +32,15 @@ const connectDatabase = async () => {
   }
 };
 
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Connect to database on each request (for serverless)
 app.use(async (req, res, next) => {
   await connectDatabase();
   next();
 });
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 
 app.get("/", (req, res) => {
@@ -83,6 +86,9 @@ app.use((req, res) => {
 });
 
 export default serverless(app);
+
+// Export the express app for local development
+export { app };
 
 // const PORT = process.env.PORT || 5000;
 
