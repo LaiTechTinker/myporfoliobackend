@@ -1,6 +1,7 @@
-const mongoose = require('mongoose');
-const Admin = require('../models/Admin');
-require('dotenv').config();
+import mongoose from 'mongoose';
+import Admin from '../models/Admin.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const createInitialAdmin = async () => {
   try {
@@ -17,8 +18,13 @@ const createInitialAdmin = async () => {
       process.exit(0);
     }
 
-    // Create initial admin using static method
-    await Admin.createAdmin('admin', 'admin123');
+    // Create initial admin
+    const hashedPassword = await bcrypt.hash('admin123', 12);
+    const admin = new Admin({
+      username: 'admin',
+      password: hashedPassword
+    });
+    await admin.save();
     console.log('✅ Initial admin created successfully!');
     console.log('Username: admin');
     console.log('Password: admin123');

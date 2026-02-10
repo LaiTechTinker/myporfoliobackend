@@ -1,24 +1,9 @@
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+import multer from 'multer';
+import path from 'path';
+import { put } from '@vercel/blob';
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Storage configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    // Generate unique filename with timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Custom storage for Vercel Blob
+const storage = multer.memoryStorage();
 
 // File filter
 const fileFilter = (req, file, cb) => {
@@ -50,13 +35,37 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
-// Export upload middleware for different fields
-const uploadFields = upload.fields([
-  { name: 'image', maxCount: 1 },
-  { name: 'video', maxCount: 1 }
-]);
+// Middleware to upload to Vercel Blob
+const uploadToBlob = async (req, res, next) => {
+  if (req.files) {
+    for (const field in req.files) {
+      const file = req.files[field][0];
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const filename = file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname);
+      
+      try {
+        const blob = await put(filename, file.buffer, {
+          access: 'public',
+        });
+        file.blobUrl = blob.url;
+      } catch (error) {
+        return next(error);
+      }
+    }
+  }
+  next();
+};
 
-module.exports = {
+// Export upload middleware for different fields
+const uploadFields = [
+  upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'video', maxCount: 1 }
+  ]),
+  uploadToBlob
+];
+
+export {
   upload,
   uploadFields
 };
