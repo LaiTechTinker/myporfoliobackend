@@ -18,4 +18,5 @@ const connectDB = async () => {
     throw error; // Throw instead of exit for serverless
   }
 };
+export default connectDB;
 
