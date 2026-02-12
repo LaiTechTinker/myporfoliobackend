@@ -3,12 +3,9 @@ import mongoose from "mongoose";
 const MONGO_URI = process.env.MONGO_URI;
 
 if (!MONGO_URI) {
-  throw new Error("Please define the MONGO_URI environment variable");
+  throw new Error("Please define MONGO_URI in environment variables");
 }
 
-/**
- * Global cache for Vercel serverless
- */
 let cached = global.mongoose;
 
 if (!cached) {
@@ -16,12 +13,8 @@ if (!cached) {
 }
 
 const connectDB = async () => {
-  // If already connected, reuse connection
-  if (cached.conn) {
-    return cached.conn;
-  }
+  if (cached.conn) return cached.conn;
 
-  // If a connection is in progress, wait for it
   if (!cached.promise) {
     cached.promise = mongoose.connect(MONGO_URI, {
       bufferCommands: false,
@@ -29,13 +22,7 @@ const connectDB = async () => {
     }).then((mongoose) => mongoose);
   }
 
-  try {
-    cached.conn = await cached.promise;
-  } catch (error) {
-    cached.promise = null;
-    throw error;
-  }
-
+  cached.conn = await cached.promise;
   return cached.conn;
 };
 
