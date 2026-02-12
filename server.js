@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import connectDB from "./config/database.js";
+import Admin from "./models/Admin.js";
 
 import projectRoutes from "./routes/projects.js";
 import contactRoutes from "./routes/contacts.js";
@@ -9,8 +10,28 @@ import adminRoutes from "./routes/admin.js";
 const PORT = process.env.PORT || 5000;
 const app = express();
 
+// Create initial admin function
+const createInitialAdmin = async () => {
+  try {
+    const existingAdmin = await Admin.findOne();
+    if (!existingAdmin) {
+      const admin = new Admin({
+        username: 'admin',
+        password: 'admin123'
+      });
+      await admin.save();
+      console.log('✅ Initial admin created: username=admin, password=admin123');
+      console.log('🔐 Please change the password after first login!');
+    }
+  } catch (error) {
+    console.error('Error creating initial admin:', error);
+  }
+};
+
 /* CONNECT DB ONCE */
-connectDB();
+connectDB().then(() => {
+  createInitialAdmin();
+});
 
 /* MIDDLEWARE */
 app.use(cors({ origin: "*" }));
