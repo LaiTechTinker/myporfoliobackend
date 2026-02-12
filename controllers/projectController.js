@@ -1,120 +1,134 @@
-import Project from '../models/Project.js';
-import { put } from '@vercel/blob';
+import Project from "../models/Project.js";
+import { v2 as cloudinary } from "cloudinary";
 
-// Get all projects
+// ================= GET ALL PROJECTS =================
 export const getProjects = async (req, res) => {
   try {
     const projects = await Project.find().sort({ createdAt: -1 });
     res.json(projects);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
-// Get single project
+// ================= GET SINGLE PROJECT =================
 export const getProject = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
+
     if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
+      return res.status(404).json({ message: "Project not found" });
     }
+
     res.json(project);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
-// Create project
+// ================= CREATE PROJECT =================
 export const createProject = async (req, res) => {
   try {
     const { title, description, techStack, githubLink, liveDemoLink } = req.body;
 
-    let imageUrl = null;
-    let videoUrl = null;
-
-    // Handle file uploads to Vercel Blob
-    if (req.files?.image) {
-      const imageFile = req.files.image[0];
-      const blob = await put(`projects/${Date.now()}-${imageFile.originalname}`, imageFile.buffer, {
-        access: 'public',
-        contentType: imageFile.mimetype
-      });
-      imageUrl = blob.url;
-    }
-
-    if (req.files?.video) {
-      const videoFile = req.files.video[0];
-      const blob = await put(`projects/${Date.now()}-${videoFile.originalname}`, videoFile.buffer, {
-        access: 'public',
-        contentType: videoFile.mimetype
-      });
-      videoUrl = blob.url;
-    }
+    const imageUrl = req.files?.image?.[0]?.cloudinaryUrl || null;
+    const videoUrl = req.files?.video?.[0]?.cloudinaryUrl || null;
 
     const project = new Project({
       title,
       description,
-      techStack: techStack ? techStack.split(',').map(tech => tech.trim()) : [],
+      techStack: techStack ? techStack.split(",").map((tech) => tech.trim()) : [],
       githubLink,
       liveDemoLink,
       image: imageUrl,
-      video: videoUrl
+      video: videoUrl,
     });
 
     const savedProject = await project.save();
     res.status(201).json(savedProject);
   } catch (error) {
-    res.status(400).json({ message: 'Validation error', error: error.message });
+    res.status(400).json({ message: "Validation error", error: error.message });
   }
 };
 
-// Update project
+// ================= UPDATE PROJECT =================
 export const updateProject = async (req, res) => {
   try {
     const { title, description, techStack, githubLink, liveDemoLink } = req.body;
 
-    // Handle file uploads
-    const updateData = {
-      title,
-      description,
-      techStack: techStack ? techStack.split(',').map(tech => tech.trim()) : [],
-      githubLink,
-      liveDemoLink
-    };
+    const project = await Project.findById(req.params.id);
 
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // If new files uploaded, delete old ones from Cloudinary
+    if (req.files?.image && project.imagePublicId) {
+      await cloudinary.uploader.destroy(project.imagePublicId, {
+        resource_type: "image",
+      });
+    }
+
+    if (req.files?.video && project.videoPublicId) {
+      await cloudinary.uploader.destroy(project.videoPublicId, {
+        resource_type: "video",
+      });
+    }
+
+    // Update fields
+    project.title = title ?? project.title;
+    project.description = description ?? project.description;
+    project.techStack = techStack
+      ? techStack.split(",").map((tech) => tech.trim())
+      : project.techStack;
+    project.githubLink = githubLink ?? project.githubLink;
+    project.liveDemoLink = liveDemoLink ?? project.liveDemoLink;
+
+    // Update media if provided
     if (req.files?.image) {
-      updateData.image = `/uploads/${req.files.image[0].filename}`;
+      project.image = req.files.image[0].cloudinaryUrl;
+      project.imagePublicId = req.files.image[0].publicId;
     }
 
     if (req.files?.video) {
-      updateData.video = `/uploads/${req.files.video[0].filename}`;
+      project.video = req.files.video[0].cloudinaryUrl;
+      project.videoPublicId = req.files.video[0].publicId;
     }
 
-    const project = await Project.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    );
+    const updatedProject = await project.save();
 
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    res.json(project);
+    res.json(updatedProject);
   } catch (error) {
-    res.status(400).json({ message: 'Validation error', error: error.message });
+    res.status(400).json({ message: "Validation error", error: error.message });
   }
 };
 
-// Delete project
+// ================= DELETE PROJECT =================
 export const deleteProject = async (req, res) => {
   try {
-    const project = await Project.findByIdAndDelete(req.params.id);
+    const project = await Project.findById(req.params.id);
+
     if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
+      return res.status(404).json({ message: "Project not found" });
     }
-    res.json({ message: 'Project deleted successfully' });
+
+    // Delete media from Cloudinary
+    if (project.imagePublicId) {
+      await cloudinary.uploader.destroy(project.imagePublicId, {
+        resource_type: "image",
+      });
+    }
+
+    if (project.videoPublicId) {
+      await cloudinary.uploader.destroy(project.videoPublicId, {
+        resource_type: "video",
+      });
+    }
+
+    await project.deleteOne();
+
+    res.json({ message: "Project deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };

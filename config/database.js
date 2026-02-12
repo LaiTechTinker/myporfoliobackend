@@ -1,29 +1,22 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
 
-const MONGO_URI = process.env.MONGO_URI;
-
-if (!MONGO_URI) {
-  throw new Error("Please define MONGO_URI in environment variables");
-}
-
-let cached = global.mongoose;
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
-}
+dotenv.config();
 
 const connectDB = async () => {
-  if (cached.conn) return cached.conn;
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+      socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+      maxPoolSize: 10, // Maintain up to 10 socket connections
+      family: 4 // Use IPv4, skip trying IPv6
+    });
 
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGO_URI, {
-      bufferCommands: false,
-      serverSelectionTimeoutMS: 5000,
-    }).then((mongoose) => mongoose);
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error('MongoDB connection error:', error.message);
+    throw error; // Throw instead of exit for serverless
   }
-
-  cached.conn = await cached.promise;
-  return cached.conn;
 };
-
 export default connectDB;
+

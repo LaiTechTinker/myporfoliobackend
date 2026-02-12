@@ -1,71 +1,97 @@
-import multer from 'multer';
-import path from 'path';
-import { put } from '@vercel/blob';
+import multer from "multer";
+import { v2 as cloudinary } from "cloudinary";
+import streamifier from "streamifier";
 
-// Custom storage for Vercel Blob
+// ================= CLOUDINARY CONFIG =================
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET,
+});
+
+// ================= MULTER MEMORY STORAGE =================
 const storage = multer.memoryStorage();
 
-// File filter
+// ================= FILE FILTER =================
 const fileFilter = (req, file, cb) => {
   const allowedImageTypes = /jpeg|jpg|png|gif|webp/;
   const allowedVideoTypes = /mp4|webm|ogg/;
   const allowedAudioTypes = /mp3|wav|ogg/;
 
-  const extname = allowedImageTypes.test(path.extname(file.originalname).toLowerCase()) ||
-                  allowedVideoTypes.test(path.extname(file.originalname).toLowerCase()) ||
-                  allowedAudioTypes.test(path.extname(file.originalname).toLowerCase());
+  const extname =
+    allowedImageTypes.test(file.originalname.toLowerCase()) ||
+    allowedVideoTypes.test(file.originalname.toLowerCase()) ||
+    allowedAudioTypes.test(file.originalname.toLowerCase());
 
-  const mimetype = allowedImageTypes.test(file.mimetype) ||
-                   allowedVideoTypes.test(file.mimetype) ||
-                   allowedAudioTypes.test(file.mimetype);
+  const mimetype =
+    allowedImageTypes.test(file.mimetype) ||
+    allowedVideoTypes.test(file.mimetype) ||
+    allowedAudioTypes.test(file.mimetype);
 
   if (mimetype && extname) {
     return cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only images, videos, and audio files are allowed.'));
+    cb(new Error("Invalid file type. Only images, videos, and audio files are allowed."));
   }
 };
 
-// Upload configuration
+// ================= MULTER INSTANCE =================
 const upload = multer({
-  storage: storage,
+  storage,
   limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024, // 5MB default
+    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024, // 10MB default
   },
-  fileFilter: fileFilter
+  fileFilter,
 });
 
-// Middleware to upload to Vercel Blob
-const uploadToBlob = async (req, res, next) => {
-  if (req.files) {
+// ================= STREAM UPLOAD TO CLOUDINARY =================
+const uploadBufferToCloudinary = (buffer, folder) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: "auto", // auto-detect image/video/audio
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
+};
+
+// ================= MIDDLEWARE TO HANDLE MULTI-FIELD UPLOAD =================
+const uploadToCloudinary = async (req, res, next) => {
+  try {
+    if (!req.files) return next();
+
     for (const field in req.files) {
       const file = req.files[field][0];
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const filename = file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname);
-      
-      try {
-        const blob = await put(filename, file.buffer, {
-          access: 'public',
-        });
-        file.blobUrl = blob.url;
-      } catch (error) {
-        return next(error);
-      }
+
+      const result = await uploadBufferToCloudinary(file.buffer, "uploads");
+
+      // Attach Cloudinary data to request file object
+      file.cloudinaryUrl = result.secure_url;
+      file.publicId = result.public_id;
+      file.resourceType = result.resource_type;
     }
+
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 };
 
-// Export upload middleware for different fields
+// ================= EXPORT READY-TO-USE FIELD CONFIG =================
 const uploadFields = [
   upload.fields([
-    { name: 'image', maxCount: 1 },
-    { name: 'video', maxCount: 1 }
+    { name: "image", maxCount: 1 },
+    { name: "video", maxCount: 1 },
+    { name: "audio", maxCount: 1 },
   ]),
-  uploadToBlob
+  uploadToCloudinary,
 ];
 
-export {
-  upload,
-  uploadFields
-};
+export { upload, uploadFields };
