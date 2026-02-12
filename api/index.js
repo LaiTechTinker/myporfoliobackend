@@ -3,6 +3,7 @@ import serverless from "serverless-http";
 import cors from "cors";
 import connectDB from "../config/database.js";
 import Admin from "../models/Admin.js";
+import bcrypt from 'bcryptjs';
 
 import projectRoutes from "../routes/projects.js";
 import contactRoutes from "../routes/contacts.js";
@@ -13,16 +14,15 @@ const app = express();
 // Create initial admin function
 const createInitialAdmin = async () => {
   try {
-    const existingAdmin = await Admin.findOne();
-    if (!existingAdmin) {
-      const admin = new Admin({
-        username: 'admin',
-        password: 'admin123'
-      });
-      await admin.save();
-      console.log('✅ Initial admin created: username=admin, password=admin123');
-      console.log('🔐 Please change the password after first login!');
-    }
+    const hashedPassword = await bcrypt.hash('admin123', 12);
+    await Admin.deleteMany({ username: 'admin' }); // Remove any existing admin
+    const admin = new Admin({
+      username: 'admin',
+      password: hashedPassword
+    });
+    await admin.save();
+    console.log('✅ Initial admin created: username=admin, password=admin123');
+    console.log('🔐 Please change the password after first login!');
   } catch (error) {
     console.error('Error creating initial admin:', error);
   }

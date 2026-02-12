@@ -19,19 +19,6 @@ const adminSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Hash password before saving
-adminSchema.pre('save', function(next) {
-  if (!this.isModified('password')) return next();
-
-  try {
-    const salt = bcrypt.genSaltSync(12);
-    this.password = bcrypt.hashSync(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
-
 // Compare password method
 adminSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
