@@ -13,25 +13,30 @@ const app = express();
 // Create initial admin function
 const createInitialAdmin = async () => {
   try {
-    const existingAdmin = await Admin.findOne();
-    if (!existingAdmin) {
-      const admin = new Admin({
+    let admin = await Admin.findOne({ username: 'admin' });
+    if (!admin) {
+      admin = new Admin({
         username: 'admin',
         password: 'admin123'
       });
       await admin.save();
       console.log('✅ Initial admin created: username=admin, password=admin123');
-      console.log('🔐 Please change the password after first login!');
+    } else {
+      admin.password = 'admin123';
+      await admin.save();
+      console.log('✅ Initial admin password reset: username=admin, password=admin123');
     }
+    console.log('🔐 Please change the password after first login!');
   } catch (error) {
     console.error('Error creating initial admin:', error);
   }
 };
 
-/* CONNECT DB ONCE */
-connectDB().then(() => {
-  createInitialAdmin();
-});
+/* CONNECT DB ONCE AND CREATE ADMIN */
+(async () => {
+  await connectDB();
+  await createInitialAdmin();
+})();
 
 /* MIDDLEWARE */
 app.use(cors({ origin: "*" }));
